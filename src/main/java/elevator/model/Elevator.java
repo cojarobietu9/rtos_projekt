@@ -1,5 +1,6 @@
 package elevator.model;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,7 +38,7 @@ public class Elevator {
     private final List<Entity> occupants;
     private State currentState;
 
-    private final LinkedList<Integer> destinationQueue;
+    private final LinkedList<ArrayList<Integer>> destinationQueue;
 
     public Elevator(int startFloor, long speedMs, long IOwaitMs, int capacity) {
         if (speedMs <= 0) {
@@ -69,17 +70,34 @@ public class Elevator {
         if (floor == currentFloor)
             return;
 
-        destinationQueue.remove(Integer.valueOf(floor));
-        destinationQueue.addFirst(floor);
+        destinationQueue.remove(new ArrayList<>(Arrays.asList(floor,1)));
+
+        int checkSize = destinationQueue.size();
+
+        for(int i=0; i< destinationQueue.size(); i++ ) {
+            if(destinationQueue.get(i).get(1) <0) {
+                continue;
+            }
+            else {
+                destinationQueue.add(i, new ArrayList<>(Arrays.asList(floor, -1)));
+                break;
+            }
+        }
+
+        // check if all items in queue are <0 - then size didn't change and we need to add manually at end
+        
+        if (checkSize == destinationQueue.size()) 
+            destinationQueue.addLast(new ArrayList<>(Arrays.asList(floor, -1)));
         System.out.printf("  Winda dodała piętro %d na początek kolejki. Kolejka: %s%n", floor, destinationQueue);
     }
 
     public void enqueueDestination(int floor) {
         if (floor == currentFloor) return;
-        if (!destinationQueue.contains(floor)) {
-            destinationQueue.addLast(floor);
+        if (!(destinationQueue.contains(new ArrayList<>(Arrays.asList(floor, -1))) || destinationQueue.contains(new ArrayList<>(Arrays.asList(floor, 1))))) {
+            destinationQueue.addLast(new ArrayList<>(Arrays.asList(floor,1)));
             System.out.printf("  Winda dodała %d piętro na koniec kolejki. Kolejka: %s%n", floor, destinationQueue);
         }
+
     }
 
     private void moveOneFloor(Division division, int targetFloor) throws InterruptedException, IllegalArgumentException {
@@ -99,7 +117,9 @@ public class Elevator {
 
     public void processQueue(Division division) throws InterruptedException {
         while (!destinationQueue.isEmpty()) {
-            int target = destinationQueue.peekFirst();
+            int target = destinationQueue.peekFirst().get(0);
+
+            destinationQueue.set(0, new ArrayList<>(Arrays.asList(target, -2)));
 
             if (currentFloor == target) {
                 destinationQueue.pollFirst();
@@ -108,7 +128,7 @@ public class Elevator {
             }
 
             if (this.currentState == State.IDLE && !destinationQueue.isEmpty()) {
-                if (destinationQueue.peekFirst() > this.currentFloor)
+                if (destinationQueue.peekFirst().get(0) > this.currentFloor)
                     setCurrentState(State.UP);
                 else
                     setCurrentState(State.DOWN);
@@ -116,16 +136,21 @@ public class Elevator {
 
             moveOneFloor(division, target);
 
-            if (destinationQueue.contains(currentFloor)) {
-                destinationQueue.remove(Integer.valueOf(currentFloor));
+            if (destinationQueue.contains(new ArrayList<>(Arrays.asList(currentFloor, -1)))) {
+                destinationQueue.remove(new ArrayList<>(Arrays.asList(currentFloor, -1)));
                 handleFloorStop(division, currentFloor);
-            } else if (currentFloor == target) {
+            } 
+            else if (destinationQueue.contains(new ArrayList<>(Arrays.asList(currentFloor, 1)))) {
+                destinationQueue.remove(new ArrayList<>(Arrays.asList(currentFloor, 1)));
+                handleFloorStop(division, currentFloor);
+            }
+            else if (currentFloor == target) {
                 destinationQueue.pollFirst();
                 handleFloorStop(division, currentFloor);
             }
         }
 
-        System.out.println("Elevator queue empty – elevator idle at floor " + currentFloor);
+        System.out.println("Pusta kolejka windy. Winda zatrzymała się na piętrze " + currentFloor);
     }
 
     public void handleFloorStop(Division division, int floorNum) throws InterruptedException {
@@ -152,6 +177,9 @@ public class Elevator {
                 pushDestinationFront(e.getDestinationFloor());
             }
         }
+        // elevator full, but floor still has waiting entities - adding floor to back
+        if(floor.hasWaitingEntities())
+            destinationQueue.addLast(new ArrayList<>(Arrays.asList(floorNum, 1)));
 
         Thread.sleep(this.IOwaitMs);
 
@@ -190,17 +218,21 @@ public class Elevator {
         return occupants.size();
     }
 
+    public State getCurrentState() {
+        return currentState;
+    }
+
     public List<Entity> getOccupants() {
         return java.util.Collections.unmodifiableList(occupants);
     }
 
-    public LinkedList<Integer> getDestinationQueue() {
+    public LinkedList<List<Integer>> getDestinationQueue() {
         return new LinkedList<>(destinationQueue);
     }
 
     public State getDirection() {
         if (destinationQueue.isEmpty()) return State.IDLE;
-        int next = destinationQueue.peekFirst();
+        int next = destinationQueue.peekFirst().get(0);
         return next > currentFloor ? State.UP : State.DOWN;
     }
 

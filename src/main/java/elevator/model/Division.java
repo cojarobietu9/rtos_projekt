@@ -26,10 +26,16 @@ public class Division {
     }
 
     public Floor getFloor(int floorNumber) {
-        if (floorNumber < 0 || floorNumber >= floors.size()) {
+        if (floorNumber < getMinFloor() || floorNumber > getMaxFloor()) {
             throw new IndexOutOfBoundsException("Piętro " + floorNumber + " nie istnieje w pionie '" + name + "'.");
         }
-        return floors.get(floorNumber);
+
+        for(int i = 0; i<floors.size(); i++){
+            if(floors.get(i).getFloorNumber() == floorNumber)
+                return floors.get(i);
+        }
+        // default, so that java doesn't shit itself
+        return floors.get(0);
     }
 
     public List<Floor> getFloors() {
@@ -77,9 +83,8 @@ public class Division {
         System.out.println("=====================================================");
     }
 
-
     private void validateFloor(int floor, String label) {
-        if (floor < 0 || floor >= floors.size()) {
+        if (floor < getMinFloor() || floor > getMaxFloor()) {
             throw new IllegalArgumentException("Złe piętro " + label + ": " + floor + " (valid range " + getMinFloor() + " - " + getMaxFloor() + (floors.size() - 1) + ")");
         }
     }

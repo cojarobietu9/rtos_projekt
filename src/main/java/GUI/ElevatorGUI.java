@@ -3,6 +3,7 @@ package GUI;
 import elevator.model.Division;
 import elevator.model.Elevator;
 import elevator.model.Floor;
+import elevator.model.Elevator.State;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -10,11 +11,13 @@ import java.awt.*;
 import java.util.List;
 import java.util.Random;
 
+
 public class ElevatorGUI extends JFrame {
 
     private Division division;
     private Elevator elevator;
 
+    private final JLabel simulationState = new JLabel();
     private final JLabel elevatorFloorLabel = new JLabel();
     private final JLabel elevatorSpeedLabel = new JLabel();
     private final JLabel elevatorStateLabel = new JLabel();
@@ -36,7 +39,7 @@ public class ElevatorGUI extends JFrame {
     private final JSpinner toFloorInput = new JSpinner(new SpinnerNumberModel(1, -1, 100, 1));
 
     private Thread simulationThread;
-    private volatile boolean stopRequested = false;
+    private volatile boolean stopRequested = true;
 
     public ElevatorGUI() {
         super("Winda");
@@ -53,8 +56,9 @@ public class ElevatorGUI extends JFrame {
         floorsPanel.add(new JScrollPane(floorsList), BorderLayout.CENTER);
         floorsPanel.add(totalFloorPassengersLabel, BorderLayout.SOUTH);
 
-        JPanel elevatorPanel = new JPanel(new GridLayout(5, 1, 5, 5));
+        JPanel elevatorPanel = new JPanel(new GridLayout(6, 1, 5, 5));
         elevatorPanel.setBorder(new TitledBorder("Winda"));
+        elevatorPanel.add(simulationState);
         elevatorPanel.add(elevatorFloorLabel);
         elevatorPanel.add(elevatorSpeedLabel);
         elevatorPanel.add(elevatorStateLabel);
@@ -64,40 +68,47 @@ public class ElevatorGUI extends JFrame {
         main.add(floorsPanel);
         main.add(elevatorPanel);
 
-        JPanel controls = new JPanel(new GridLayout(3, 4, 5, 5));
+        JPanel controls = new JPanel(new GridLayout(4, 4, 5, 5));
         controls.setBorder(new TitledBorder("Parametry symulacji"));
 
-        controls.add(new JLabel("Startowe piętro:"));
-        controls.add(startFloorInput);
-        controls.add(new JLabel("Min piętro:"));
+        controls.add(new JLabel("Najniższe piętro:"));
         controls.add(minFloorInput);
-
-        controls.add(new JLabel("Max piętro:"));
+        controls.add(new JLabel("Najwyższe piętro:"));
         controls.add(maxFloorInput);
-        controls.add(new JLabel("Prędkość (ms):"));
-        controls.add(speedMsInput);
-
-        controls.add(new JLabel("Postój (ms):"));
-        controls.add(ioWaitMsInput);
-        controls.add(new JLabel("Pojemność:"));
+        
+        controls.add(new JLabel("Piętro startowe:"));
+        controls.add(startFloorInput);
+        controls.add(new JLabel("Pojemność windy:"));
         controls.add(capacityInput);
+        
+        controls.add(new JLabel("Czas przejazdu między piętrami (ms):"));
+        controls.add(speedMsInput);
+        controls.add(new JLabel("Czas postoju przy wsiadaniu (ms):"));
+        controls.add(ioWaitMsInput);
 
-        JPanel passengerPanel = new JPanel(new GridLayout(2, 3, 5, 5));
+        JButton apply = new JButton("Zastosuj i restartuj");
+        // empty labels for alignment
+        controls.add(new JLabel(""));
+        controls.add(new JLabel(""));
+        controls.add(new JLabel(""));
+        controls.add(apply);
+
+        JPanel passengerPanel = new JPanel(new GridLayout(3, 2, 5, 5));
         passengerPanel.setBorder(new TitledBorder("Dodaj pasażera"));
         passengerPanel.add(new JLabel("Z piętra:"));
         passengerPanel.add(fromFloorInput);
-        passengerPanel.add(new JLabel());
 
         passengerPanel.add(new JLabel("Na piętro:"));
         passengerPanel.add(toFloorInput);
         JButton addManualPassenger = new JButton("Dodaj");
+        passengerPanel.add(new JLabel(""));
         passengerPanel.add(addManualPassenger);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JButton apply = new JButton("Zastosuj i restartuj");
-        JButton addRandomPassenger = new JButton("Dodaj losowego");
+        JPanel buttons = new JPanel(new GridLayout(1,3,5,5));
+
+        JButton addRandomPassenger = new JButton("<html><body style='text-align:center'>Dodaj losowego<br>pasażera</body></html>");
         JButton runSimulation = new JButton("Start symulacji");
-        JButton stopSimulation = new JButton("Stop");
+        JButton stopSimulation = new JButton("Stop symulacji");
 
         apply.addActionListener(e -> {
             stopSimulation();
@@ -109,15 +120,13 @@ public class ElevatorGUI extends JFrame {
         runSimulation.addActionListener(e -> startSimulationThread());
         stopSimulation.addActionListener(e -> stopSimulation());
 
-        buttons.add(apply);
         buttons.add(addRandomPassenger);
         buttons.add(runSimulation);
         buttons.add(stopSimulation);
 
-        JPanel bottom = new JPanel(new BorderLayout(10, 10));
-        bottom.add(passengerPanel, BorderLayout.CENTER);
-        bottom.add(buttons, BorderLayout.SOUTH);
-
+        JPanel bottom = new JPanel(new GridLayout(1, 2, 5,5));
+        bottom.add(passengerPanel);
+        bottom.add(buttons);
         add(main, BorderLayout.CENTER);
         add(controls, BorderLayout.NORTH);
         add(bottom, BorderLayout.SOUTH);
@@ -125,7 +134,7 @@ public class ElevatorGUI extends JFrame {
         updateUIState();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(950, 520);
+        setSize(950, 640);
         setLocationRelativeTo(null);
     }
 
@@ -171,11 +180,13 @@ public class ElevatorGUI extends JFrame {
         Random r = new Random();
         int from, to;
         do {
-            from = r.nextInt(division.getFloorCount());
-            to = r.nextInt(division.getFloorCount());
+            from = r.nextInt(division.getFloorCount()) + division.getMinFloor(); // bo możemy mieć piętra ujemne albo zaczynać na >0 piętrze
+            to = r.nextInt(division.getFloorCount()) + division.getMinFloor();
         } while (from == to);
 
         division.callElevator(from, to);
+        if(elevator.getCurrentState() == State.IDLE && !stopRequested)
+            startSimulationThread();
         updateUIState();
     }
 
@@ -212,13 +223,34 @@ public class ElevatorGUI extends JFrame {
         if (simulationThread != null) {
             simulationThread.interrupt();
         }
+        updateUIState();
     }
 
     private void updateUIState() {
         SwingUtilities.invokeLater(() -> {
+            if (stopRequested) {
+                simulationState.setText("Stan symulacji: Zatrzymana");
+                simulationState.setForeground(Color.RED);
+            }
+            else {
+                simulationState.setText("Stan symulacji: Aktywna");
+                simulationState.setForeground(new Color(28,163,31));
+            }
             elevatorFloorLabel.setText("Aktualne piętro: " + elevator.getCurrentFloor());
             elevatorSpeedLabel.setText("Prędkość (ms/piętro): " + elevator.getSpeedMs());
             elevatorStateLabel.setText("Stan: " + elevator.getDirection());
+            switch(elevator.getDirection()) {
+                case UP:
+                    elevatorStateLabel.setForeground(new Color(107, 105, 255));
+                    break;
+                case IDLE:
+                    elevatorStateLabel.setForeground(new Color(255, 166, 0)); 
+                    break;
+                case DOWN:
+                    elevatorStateLabel.setForeground(new Color(213, 105, 255));
+                    break;
+            }
+            
             elevatorPassengersLabel.setText("Pasażerowie w windzie: " +
                     elevator.getOccupantCount() + "/" + elevator.getMaxCapacity());
             elevatorQueueLabel.setText("Kolejka: " + elevator.getDestinationQueue());
