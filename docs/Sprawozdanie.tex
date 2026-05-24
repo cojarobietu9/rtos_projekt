@@ -1,0 +1,491 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage[margin=3cm]{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+
+
+% Kolory dla listingów kodu
+\definecolor{codebg}{rgb}{0.97,0.97,0.97}
+\definecolor{keywordcolor}{rgb}{0.0,0.3,0.7}
+\definecolor{commentcolor}{rgb}{0.3,0.5,0.3}
+\definecolor{stringcolor}{rgb}{0.7,0.1,0.1}
+
+\lstset{
+  language=Java,
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  keywordstyle=\color{keywordcolor}\bfseries,
+  commentstyle=\color{commentcolor}\itshape,
+  stringstyle=\color{stringcolor},
+  frame=single,
+  rulecolor=\color{gray!40},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  breaklines=true,
+  showstringspaces=false,
+  tabsize=4,
+  captionpos=b
+}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  urlcolor=blue!70!black,
+  pdftitle={Dokumentacja Techniczna - Symulator Windy},
+  pdfauthor={}
+}
+
+\titleformat{\section}{\large\bfseries}{}{0em}{\thesection\quad}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{\thesubsection\quad}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\LARGE\bfseries Sprawozdanie z projektu zaliczeniowego przedmiotu
+  Systemy Operacyjne Czasu Rzeczywistego\par}
+  \vspace{0.5cm}
+  {\Large Symulator operacji windy budynkowej w języku Java\par}
+  \vspace{0.3cm}
+  \vspace{3cm}
+    \textbf{Autorzy:} \\
+  \vspace{0.3cm}
+  Jan Machowski, 325492 \\
+  Bartłomiej Modzolewski, 331719 \\
+  Karolina Wiśniewska, 331757 \\
+    \vspace{2cm}
+  \begin{tabular}{rl}
+    \textbf{Semestr:}             & 26L \\
+    \textbf{Język:}            & Java 17+ \\
+    \textbf{Środowisko GUI}     & Swing \\
+  \end{tabular}
+  \vfill
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+
+\section{Wstęp}
+\label{sec:wstep}
+
+Niniejszy dokument stanowi sprawozdanie z projektu zaliczeniowego w ramach zajęć projektowych przedmiotu Systemy Operacyjne Czasu 
+Rzeczywitego, odbywających się w semestrze letnim roku 2026. Projekt polegał na stworzeniu aplikacji symulującej działanie przykładowego,
+wybranego przez zespół, systemu operacyjnego czasu rzeczywistego, oraz przedstawienie jego działania.
+
+Wybrany przez zespół temat aplikacji to system obsługujący działanie windy budynkowej. Projekt zakładał stworzenie oprogramowania
+obsługującego, oraz środowiska symulującego działanie windy, wraz z graficznym interfejsem użytkownika.
+
+Kluczowymi aspektami do rozwiązania w celu ukończenia projektu były:
+\begin{enumerate}
+    \item Zapewnienie ciągłego działania systemu windy, niezależnie od liczby oczekujących osób;
+    \item Wykorzystanie odpowiedniego algorytmu kolejkowania, w celu realistycznego odtworzenia działania systemu;
+    \item Umożliwienie modyfikacji podstawowych parametrów windy, takich jak:
+    \begin{itemize}
+        \item Liczba piętr, piętro początkowe i końcowe;
+        \item Prędkość przejazdu windy między piętrami;
+        \item Czas oczekiwania na obsługę wejścia / wyjścia pasażerów;
+        \item Maksymalna liczba osobników w windzie;
+        \item Piętro początkowe windy.
+    \end{itemize}
+    \item Stworzenie odpowiedniego środowiska symulacyjnego dla codziennego działania systemu, w co wchodzi m.in. dodawanie 
+            pasażerów na obsługiwanych piętrach.
+    \item Wykonanie funkcjonalnego i intuicyjnego interfejsu graficznego użytkownika w celu obsługi symulacji.
+\end{enumerate}
+
+Najistotniejszym elementem całego projektu jest stworzenie wykorzystanie algorytmu kolejkowania. Jak można się domyśleć, 
+winda nie może przykładowo spontanicznie zatrzymać się na piętrze, z którego natychmiast wcześniej zostało zarejestrowane wezwanie,
+oraz nie powinna ignorować wezwania które zostało wykonane znaczny czas wcześniej. 
+
+Kolejnym istotnym elementem było zapewnienie funkcjonalności symulacyjnych windy - zarówno manualnych, jak i automatycznych. 
+W to wchodzi m.in. ręczne oraz losowe tworzenie pasażerów czekających na odpowiednich piętrach, obsługa ich zapytań tak, żeby jak
+najwięcej osób dostało się na swoje wymagane piętra w odpowiednim czasie a także unikanie przypadku, w którym winda kulkukrotnie 
+przejeżdża przez piętro bez zatrzymania się na nim.
+
+Wynikiem projektu jest załączony w katalogu \texttt{src/} projekt \textbf{Elevator}, który jest skończoną implementacją symulacji
+systemu operacyjnego czasu rzeczywistego. Niniejsze sprawozdanie opisywać będzie strukturę, działanie, wykorzytanie oraz 
+kluczowe aspekty napotkane podczas tworzenia projektu.
+
+
+
+
+
+\section{Struktura projektu}
+\label{sec:struktura}
+
+Projekt podzielony jest na dwa pakiety:
+
+\begin{itemize}
+  \item \texttt{elevator.model} - logika backend'owa symulacji - model danych, klas wykorzystanych w projekcie i algorytmy
+                                    sterowania windą i obsługi przypadków;
+  \item \texttt{GUI} - graficzny interfejs użytkownika oparty na bibliotece Swing.
+\end{itemize}
+
+Poniższa tabela przedstawia klasy stworzone w ramach implementacji projektu wraz z ich przynależnością:
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Klasa} & \textbf{Pakiet} & \textbf{Rola} \\
+  \midrule
+  \texttt{Entity}    & \texttt{elevator.model} & Reprezentacja pasażera \\
+  \texttt{Floor}     & \texttt{elevator.model} & Piętro budynku \\
+  \texttt{Elevator}  & \texttt{elevator.model} & Winda  \\
+  \texttt{Division}  & \texttt{elevator.model} & Pion budynku (zbiór n pięter i jednej windy) \\
+  \texttt{ElevatorGUI} & \texttt{GUI}          & Okno aplikacji Swing \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+
+
+
+
+
+
+
+
+\section{Opis klas}
+\label{sec:klasy}
+
+
+
+
+
+\subsection{Klasa \texttt{Entity}}
+\label{subsec:entity}
+
+\subsubsection{Opis klasy}
+Klasa reprezentująca pojedynczego pasażera (osobnika) w symulacji. Każda instancja posiada 4 istotne informacje:
+\begin{enumerate}
+    \item \textbf{Unikalny identyfikator}, nadawany automatycznie za pomocą licznika atomowego (\texttt{AtomicInteger});
+    \item \texttt{originFloor} - piętro, z którego pochodzi i na którym oczekuje na windę pasażer. Jest wstawiane w kolejkę \texttt{destinationQueue} gdy pasażer się pojawia, 
+            oraz usuwane z niej gdy pasażer wsiada do windy;
+    \item \texttt{destinationFloor} - piętro, na którym pasażer chce wysiąść. Jest wstawiane w kolejkę \texttt{destinationQueue} gdy pasażer wsiada do windy oraz usuwane
+            gdy pasażer wysiada na wybranej windzie; 
+    \item \textbf{Jeden z trzech stanów} \texttt{Entity.State}, opisanych poniżej.
+\end{enumerate}
+
+\subsubsection{Opis stanów \texttt{Entity.State}}
+
+Każdy osobnik klasy \texttt{Entity} posiada jeden z trzech stanów \texttt{Entity.State} opisujących aktualne zadanie pasażera:
+\begin{itemize}
+  \item \texttt{WAITING\_ON\_FLOOR} - pasażer oczekuje na windę na piętrze początkowym;
+  \item \texttt{IN\_ELEVATOR} - pasażer znajduje się w kabinie windy, jedzie na piętro docelowe;
+  \item \texttt{ARRIVED} - pasażer dotarł do celu i opuścił windę. Po opuszczeniu windy, obiekt klasy \texttt{Entity} jest usuwany.
+\end{itemize}
+
+Obiekty klasy \texttt{Entity} zawarte są we wszystkich trzech klasach funkcjonalnych, tj. \texttt{Elevator}, \texttt{Floor} i 
+\texttt{Division}.
+
+\subsubsection{Najważniejsze metody:}
+
+\begin{description}[leftmargin=1cm, style=nextline]
+  \item[\texttt{boardElevator()}]
+    Zmienia stan pasażera z \texttt{WAITING\_ON\_FLOOR} na \texttt{IN\_ELEVATOR}. Wyrzuca \\ \texttt{IllegalStateException}, gdy pasażer nie oczekuje na piętrze;
+
+  \item[\texttt{exitElevator()}]
+    Zmienia stan z \texttt{IN\_ELEVATOR} na \texttt{ARRIVED}. Analogicznie zabezpieczona walidacją aktualnego stanu pasażera, co \texttt{boardElevator};
+
+  \item[\texttt{getId()}, \texttt{getOriginFloor()}, \texttt{getDestinationFloor()}, \texttt{getState()}]
+    Funkcje zwracające wartości pól niezmiennych - identyfikatora, piętra startowego, docelowego oraz aktualnego stanu.
+\end{description}
+
+
+
+
+
+
+\subsection{Klasa \texttt{Floor}}
+\label{subsec:floor}
+
+\subsubsection{Opis klasy}
+
+Klasa reprezentująca jedno piętro budynku, do którego dostępna jest winda. Implementuje \texttt{Comparable<Floor>} na podstawie numeru piętra,
+dzięki czemu piętra można porównywać i sortować (używane w \texttt{Division} do wyznaczania \texttt{minFloor} i \texttt{maxFloor}). Klasa ta zawiera:
+\begin{enumerate}
+    \item \texttt{floorNumber} - numer piętra w kondygnacji;
+    \item \texttt{waitingEntities} - lista pasażerów oczekujących na danym piętrze. Gdy winda zatrzyma się na danym piętrze, oraz nie jest w pełni zapełniona, 
+                obiekty osobników z tej listy trafiają do listy \texttt{occupants} klasy \texttt{Elevator};
+\end{enumerate}
+
+\subsubsection{Najważniejsze metody:}
+
+\begin{description}[leftmargin=1cm, style=nextline]
+  \item[\texttt{spawnEntity(int destinationFloor)}]
+    Generuje nowy obiekt klasy \texttt{Entity} - pasażera na piętrze z podanym piętrem docelowym, dodaje go do listy oczekujących i zwraca referencję.
+    Wyrzuca \texttt{IllegalArgumentException} przy próbie stworzenia pasażera z piętrem docelowym równym bieżącemu;
+
+  \item[\texttt{entityEntersElevator(Entity entity)}]
+    Usuwa pasażera z listy oczekujących i wywołuje \texttt{entity.boardElevator()} na danym pasażerze. 
+    Wyrzuca \texttt{IllegalArgumentException}, gdy pasażer nie należy do tej listy.
+
+  \item[\texttt{entityExitsElevator(Entity entity)}]
+    Wywołuje \texttt{entity.exitElevator()} - pasażer dotarł na miejsce i "znika" z okolicy windy.
+
+  \item[\texttt{hasWaitingEntities()}, \texttt{getWaitingCount()}, \texttt{getWaitingEntities()}]
+    Metody informacyjne o stanie piętra; \texttt{getWaitingEntities()} zwraca niemodyfikowalny widok listy.
+\end{description}
+
+
+
+
+
+
+\subsection{Klasa \texttt{Elevator}}
+\label{subsec:elevator}
+
+\subsubsection{Opis klasy}
+
+Klasa \texttt{Elevator} jest główną klasą logiki symulacji. Zarządza windy znajdującą się w kondygnacji \texttt{Division}: przechowuje informacje o jej aktualnej pozycji, 
+listę pasażerów wewnątrz kabiny, kolejkę pięter docelowych oraz stan ruchu. 
+
+Winda porusza się synchronicznie w dedykowanym wątku, blokując go podczas symulacji czasu przejazdu i postoju (\texttt{Thread.sleep}).
+
+Klasa ta zawiera następujące informacje:
+\begin{enumerate}
+    \item \texttt{destinationQueue} - kolejka priorytetowa klasy \texttt{Elevator}. Jest to główna część aplikacji, na której opiera się cała interpretacja 
+            systemu operacyjnego czasu rzeczywistego. Do tej kolejki dodawane są piętra, które winda ma odwiedzić, w kolejności ich istotności - opisane w sekcji 
+            \ref{subsubsec:elevator_kolejka}.
+    \item \texttt{currentState} - aktualy stan windy, wybrany jako jeden spośród dostępnych stanów \texttt{Elevator.State} - opisane w sekcji \ref{subsubsec:elevator_stany};
+    \item \texttt{currentFloor} - aktualne piętro (numer piętra, nie obiekt klasy \texttt{Floor}), na którym znajduje się winda;  
+    \item \texttt{speedMs} - prędkość, z jaką winda porusza się między piętrami. W praktyce jest to czas oczekiwania między "przeskoczeniem" windy między piętrami;
+    \item \texttt{IOwaitMs} - czas, jaki winda czeka podczas wchodzenia / wychodzenia pasażerów. Symuluje to m.in. otwarcie drzwi i wymianę pasażerów;
+    \item \texttt{maxCapacity} - maksymalna liczba pasażerów windy dozwolona w konkretnym momencie w czasie;
+    \item \texttt{occupants} - lista klasy \texttt{Entity}, będąca reprezentacją aktualnych pasażerów windy.
+\end{enumerate}
+
+\textbf{Interfejs \texttt{ElevatorListener}:}
+Wzorzec obserwatora umożliwiający powiadamianie zewnętrznych komponentów (np. GUI) o każdej zmianie stanu windy. Rejestracja przez \texttt{addListener}, wyrejestrowanie przez \texttt{removeListener}.
+
+\subsubsection{Opis stanów \texttt{Elevator.State}}
+\label{subsubsec:elevator_stany}
+W celu określenia aktualnego stanu (stateczny / poruszania się), jak i kierunku poruszania się windy, stworzono podklasę \texttt{Elevator.State}. Poniżej znajduje się 
+opis stanów zawartych w ramach tej klasy:
+\begin{itemize}
+  \item \texttt{UP} - winda porusza się w górę kondygnacji;
+  \item \texttt{DOWN} - winda porusza się w dół kondygnacji;
+  \item \texttt{IDLE} - winda stoi - nie ma pasażerów, ani osób oczekujących na piętrach.
+\end{itemize}
+
+\subsubsection{Kolejka \texttt{destinationQueue}}
+\label{subsubsec:elevator_kolejka}
+
+Kolejka \texttt{destinationQueue} jest najistotniejszym elementem całej implementacji. W praktyce, jest to lista dwuelementowych list postaci 
+
+\texttt{[numer\_piętra, priorytet\_piętra]}. Wartość priorytetu jest zależna od tego, w jaki sposób dane piętro zostało dodane do kolejki:
+\begin{itemize}
+  \item \texttt{1} - wpis dodany na koniec kolejki, wywołanie przez osobnika z poziomu piętra (funkcja \texttt{callElevator});
+  \item \texttt{-1} - wpis wstawiony ze średnim priorytetem, wywołane przez osobnika w kabinie jako jego piętro docelowe;
+  \item \texttt{-2} - wpis aktualnie obsługiwany, wstawiony z największym priorytetem.
+\end{itemize}
+
+Największa potencjalna liczba elementów kolejki \texttt{destinationQueue} to liczba wszystkich pięter, z czego maksymalnie \texttt{maxCapacity} z nich 
+ma ujemną (czyli priorytetową) wartość priorytetu. 
+
+\subsubsection{Najważniejsze metody:}
+
+\begin{description}[leftmargin=1cm, style=nextline]
+  \item[\texttt{processQueue(Division division)}]
+    Pętla główna symulacji. Funkcja przetwarza kolejkę \texttt{destinationQueue} do wyczerpania, i jest wywoływana gdy do pustej kolejki zostanie dodane nowe żądanie. 
+    W każdej iteracji funkcji wykonywana jest następująca kolejność instrukcji:
+    \begin{enumerate}
+        \item Głowę kolejki \texttt{destinationQueue}, tj. piętro o priorytecie -2 - czyli to, do którego winda musi dojechać zanim zmieni kierunek / zatrzyma jazdę;
+        \item Wyznaczany jest \texttt{currentState} - kierunek ruchu na podstawie pozycji \texttt{currentFloor} względem głowy \texttt{destinationQueue};
+        \item Dopóki \texttt{currentFloor} nie równe jest piętru z głowy \texttt{destinationQueue}, winda jest przesuwana o jedno piętro (funkcja \texttt{moveOneFloor}) 
+                i obsługuje postój (\texttt{handleFloorStop}), jeśli bieżące piętro jest \textbf{gdziekolwiek} na liście docelowej. Tutaj może wydarzyć się jedna z trzech 
+                sytuacji:
+                \begin{itemize}
+                    \item Do windy wchodzi osoba oczekująca na piętrze - aktualizacja \texttt{occupants} windy i \texttt{waitingEntities} piętra oraz dodanie 
+                    \texttt{destinationFloor} osoby na koniec elementów z priorytetem -1 (czyli między ostatnim elementem -1 a pierwszym elementem +1, jeżeli taki istnieje);
+                    \item Z windy wychodziu osoba - aktualizacja \texttt{occupants} windy i usunięcie \texttt{destinationFloor} z \texttt{destinationQueue};
+                    \item Winda jest zapełniona - nie zmienia się stan \texttt{occupants} ani \texttt{destinationQueue}.
+                \end{itemize}
+        \item Gdy kolejka dojdzie do piętra z głowy \texttt{destinationQueue}, \textbf{co najmniej jeden pasażer na pewno wysiada}, usunięta jest aktualna głowa i ustalona jest 
+                nowa głowa kolejki \texttt{destinationQueue}.
+        \end{enumerate} 
+
+\item[\texttt{enqueueDestination(int floor)}]
+    Dodaje piętro na koniec kolejki, jeśli nie ma go jeszcze w kolejce i jest różne od aktualnego piętra. Wykonywane w ramach funkcji \texttt{callElevator}.
+
+  \item[\texttt{pushDestinationFront(int floor)}]
+    Wstawia piętro z wysokim priorytetem (przed wszystkimi wpisami bez priorytetu ujemnego). Stosowane, gdy pasażer wsiada i jego piętro docelowe powinno być obsłużone wcześniej.
+
+
+  \item[\texttt{handleFloorStop(Division division, int floorNum)}]
+    Obsługuje postój windy: najpierw wysiada pasażerów z bieżącym piętrem docelowym, następnie wsiada oczekujących (o ile nie przekroczono pojemności), dodaje ich piętra docelowe priorytetowo do kolejki i symuluje czas postoju (\texttt{IOwaitMs}).
+
+  \item[\texttt{isFull()}, \texttt{isEmpty()}]
+    Sprawdzają, czy kabina jest zapełniona do maksymalnej pojemności lub pusta.
+
+  \item[\texttt{getDirection()}]
+    Zwraca przewidywany kierunek ruchu (\texttt{UP}/\texttt{DOWN}/\texttt{IDLE}) na podstawie pierwszego wpisu w kolejce.
+\end{description}
+
+
+
+
+
+
+\subsection{Klasa \texttt{Division}}
+\label{subsec:division}
+
+
+Reprezentuje pion budynku - zbiór pięter obsługiwanych przez jedną windę. Łączy obiekty \texttt{Floor} z obiektem \texttt{Elevator} i udostępnia wysokopoziomowe API do wywoływania windy.
+
+\textbf{Najważniejsze metody:}
+
+\begin{description}[leftmargin=1cm, style=nextline]
+  \item[\texttt{Division(String name, int startFloor, int endFloor, Elevator elevator)}]
+    Konstruktor tworzy listę pięter od \texttt{startFloor} do \texttt{endFloor} (włącznie). Rzuca \texttt{IllegalArgumentException}, gdy \texttt{endFloor < startFloor}.
+
+  \item[\texttt{callElevator(int originFloor, int destinationFloor)}]
+  \label{division:callElevator}
+    Główna metoda API: tworzy pasażera na piętrze \texttt{originFloor} (przez \texttt{Floor.spawnEntity}) i dodaje to piętro do kolejki windy (\texttt{Elevator.enqueueDestination}). Zwraca referencję do nowo utworzonego pasażera.
+
+  \item[\texttt{getFloor(int floorNumber)}]
+    Zwraca obiekt \texttt{Floor} dla podanego numeru piętra. Rzuca \texttt{IndexOutOfBoundsException} przy numerze spoza zakresu.
+
+  \item[\texttt{getMinFloor()}, \texttt{getMaxFloor()}]
+    Wyznaczają odpowiednio najniższe i najwyższe piętro w pionie, korzystając z naturalnego porządku obiektów \texttt{Floor}.
+
+  \item[\texttt{printStatus()}]
+    Wypisuje na standardowe wyjście aktualny stan wszystkich pięter oraz windy - pomocnicze narzędzie diagnostyczne.
+\end{description}
+
+
+
+
+
+
+\subsection{Klasa \texttt{ElevatorGUI}}
+\label{subsec:gui}
+
+\textbf{Pakiet:} \texttt{GUI}
+
+Główne okno aplikacji zbudowane na bazie \texttt{JFrame} (Swing). Odpowiada za wizualizację stanu symulacji w czasie rzeczywistym oraz interakcję z użytkownikiem. Komunikacja z warstwą modelu odbywa się przez interfejs \texttt{ElevatorListener} - winda wywołuje \texttt{updateUIState()} po każdym ruchu i postoju.
+
+\textbf{Układ interfejsu:}
+\begin{itemize}
+  \item \textbf{Północ} (\texttt{BorderLayout.NORTH}) - panel parametrów symulacji (zakresy pięter, prędkość, czas postoju, pojemność) z przyciskiem \emph{Zastosuj i restartuj},
+  \item \textbf{Centrum} - dwie kolumny: lista pięter (z zaznaczeniem aktualnej pozycji windy) i panel stanu windy (piętro, prędkość, kierunek, pasażerowie, kolejka),
+  \item \textbf{Południe} - panel dodawania pasażera ręcznego oraz przyciski sterowania symulacją.
+\end{itemize}
+
+\textbf{Najważniejsze metody:}
+
+\begin{description}[leftmargin=1cm, style=nextline]
+  \item[\texttt{initSimulationFromInputs()}]
+    Odczytuje wartości ze spinnerów, tworzy nowy obiekt \texttt{Elevator} i \texttt{Division}, rejestruje listener GUI oraz dodaje domyślnych pasażerów startowych.
+
+  \item[\texttt{startSimulationThread()}]
+    Uruchamia wątek symulacji (jeśli nie jest aktywny), który wywołuje \texttt{Elevator.handleFloorStop} oraz \texttt{Elevator.processQueue}.
+
+  \item[\texttt{stopSimulation()}]
+    Ustawia flagę \texttt{stopRequested} i przerywa wątek symulacji przez \texttt{Thread.interrupt()}.
+
+  \item[\texttt{spawnRandomPassenger()}]
+    Losuje parę pięter (różnych) w ramach aktualnego zakresu \texttt{Division} i wywołuje \texttt{callElevator}. Jeśli winda stoi i symulacja jest aktywna, automatycznie wznawia wątek.
+
+  \item[\texttt{addManualPassenger()}]
+    Pobiera wartości ze spinnerów \emph{Z piętra} i \emph{Na piętro} i wywołuje \texttt{callElevator}. Waliduje, że piętra są różne.
+
+  \item[\texttt{updateUIState()}]
+    Aktualizuje wszystkie etykiety i listę pięter za pomocą \texttt{SwingUtilities.invokeLater}, zapewniając wywołanie na wątku EDT.
+\end{description}
+
+\section{Uruchomienie projektu}
+\label{sec:uruchomienie}
+
+\subsection{Wymagania}
+
+\begin{itemize}
+  \item \textbf{Java Development Kit (JDK)} w wersji 17 lub nowszej.
+  \item System operacyjny z obsługą Java Swing (Windows, Linux z X11/Wayland, macOS).
+  \item Opcjonalnie: \textbf{Maven} lub \textbf{Gradle} do zarządzania budowaniem projektu (projekt nie posiada pliku \texttt{pom.xml} ani \texttt{build.gradle} - poniżej podano ręczną kompilację).
+\end{itemize}
+
+\subsection{Kompilacja i uruchomienie z wiersza poleceń}
+
+Zakładając strukturę katalogów zgodną z archiwum \texttt{src.zip}:
+
+\begin{lstlisting}[language=bash, caption={Kompilacja projektu}]
+cd src/main/java
+javac -d out elevator/model/*.java GUI/ElevatorGUI.java
+java -cp out GUI.ElevatorGUI
+\end{lstlisting}
+
+\subsection{Uruchomienie z IDE}
+
+\begin{enumerate}
+  \item Otwórz projekt w wybranym środowisku (IntelliJ IDEA, Eclipse, NetBeans).
+  \item Ustaw katalog \texttt{src/main/java} jako \emph{source root}.
+  \item Uruchom metodę \texttt{main} w klasie \texttt{GUI.ElevatorGUI}.
+\end{enumerate}
+
+\subsection{Konfiguracja parametrów w GUI}
+
+Po uruchomieniu aplikacji dostępny jest panel \emph{Parametry symulacji} pozwalający na zmianę:
+
+\begin{center}
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Parametr} & \textbf{Domyślna wartość} & \textbf{Opis} \\
+  \midrule
+  Najniższe piętro       & $-1$   & Minimalna kondygnacja pionu \\
+  Najwyższe piętro       & $7$    & Maksymalna kondygnacja pionu \\
+  Piętro startowe        & $4$    & Pozycja windy na starcie \\
+  Pojemność windy        & $5$    & Maksymalna liczba pasażerów w kabinie \\
+  Czas przejazdu (ms)    & $1000$ & Czas podróży między sąsiednimi piętrami \\
+  Czas postoju (ms)      & $3000$ & Czas oczekiwania przy wsiadaniu/wysiadaniu \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Kliknięcie przycisku \emph{Zastosuj i restartuj} zatrzymuje bieżącą symulację, reinicjalizuje model z nowymi parametrami i dodaje domyślnych pasażerów startowych.
+
+\section{Architektura i przepływ danych}
+\label{sec:architektura}
+
+Projekt stosuje uproszczoną architekturę warstwową:
+
+\begin{enumerate}
+  \item \textbf{Model} (\texttt{elevator.model}) - cała logika symulacji, niezależna od interfejsu.
+  \item \textbf{Widok/Kontroler} (\texttt{GUI}) - interfejs Swing obsługujący zdarzenia użytkownika i odświeżający widok przez \texttt{ElevatorListener}.
+\end{enumerate}
+
+Przepływ typowego zdarzenia \emph{wywołanie windy}:
+
+\begin{enumerate}
+  \item Użytkownik klika \emph{Dodaj} lub \emph{Dodaj losowego pasażera} w \texttt{ElevatorGUI}.
+  \item \texttt{ElevatorGUI} wywołuje \texttt{Division.callElevator(from, to)}.
+  \item \texttt{Division} tworzy \texttt{Entity} na odpowiednim \texttt{Floor} i dodaje piętro do kolejki \texttt{Elevator}.
+  \item Wątek symulacji (uruchomiony przez \texttt{startSimulationThread}) przetwarza kolejkę przez \texttt{Elevator.processQueue}.
+  \item Po każdym ruchu i postoju \texttt{Elevator} wywołuje \texttt{notifyListeners()}, co uruchamia \texttt{ElevatorGUI.updateUIState()} na wątku EDT.
+\end{enumerate}
+
+\section{Podsumowanie}
+\label{sec:podsumowanie}
+
+% TODO: Uzupełnić podsumowanie projektu.
+% Sugerowane punkty do opisania:
+%   - Wnioski z realizacji projektu
+%   - Napotkane trudności i sposób ich rozwiązania
+%   - Możliwe kierunki dalszego rozwoju (np. obsługa wielu wind, algorytmy SCAN/LOOK)
+%   - Ocena zastosowanych rozwiązań technicznych
+
+\textit{[Miejsce na podsumowanie - do uzupełnienia przez autora.]}
+
+\end{document}
