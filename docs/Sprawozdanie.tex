@@ -12,6 +12,8 @@
 \usepackage{enumitem}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{svg}
+\usepackage{float}
 
 
 % Kolory dla listingów kodu
@@ -321,17 +323,22 @@ ma ujemną (czyli priorytetową) wartość priorytetu.
     Dodaje piętro na koniec kolejki, jeśli nie ma go jeszcze w kolejce i jest różne od aktualnego piętra. Wykonywane w ramach funkcji \texttt{callElevator}.
 
   \item[\texttt{pushDestinationFront(int floor)}]
-    Wstawia piętro z wysokim priorytetem (przed wszystkimi wpisami bez priorytetu ujemnego). Stosowane, gdy pasażer wsiada i jego piętro docelowe powinno być obsłużone wcześniej.
+    Wstawia piętro z wysokim priorytetem (tj. przed wszystkimi wpisami bez priorytetu ujemnego).
+    Stosowane, gdy pasażer wsiada i jego piętro docelowe znajduje się już w kolejce - wtedy powinno być obsłużone wcześniej, 
+    więc jest przesuwane z wyższym priorytetem.
 
 
   \item[\texttt{handleFloorStop(Division division, int floorNum)}]
-    Obsługuje postój windy: najpierw wysiada pasażerów z bieżącym piętrem docelowym, następnie wsiada oczekujących (o ile nie przekroczono pojemności), dodaje ich piętra docelowe priorytetowo do kolejki i symuluje czas postoju (\texttt{IOwaitMs}).
+    Druga najważniejsza funkcja aplikacji. Obsługuje sytuację windy w czasie postoju na piętrze: najpierw sprawia, że pasażerowie
+    z bieżącym piętrem docelowym wysiadają z windy (usuwa ich z listy \texttt{occupants}). Następnie sprawia, że oczekujący na piętrze
+    pasażerowie wsiadają (o ile nie przekroczono pojemności \texttt{maxCapacity}), dodaje ich piętra docelowe priorytetowo do kolejki 
+    i symuluje czas postoju (\texttt{IOwaitMs}).
 
   \item[\texttt{isFull()}, \texttt{isEmpty()}]
-    Sprawdzają, czy kabina jest zapełniona do maksymalnej pojemności lub pusta.
+    Sprawdzają, czy kabina windy jest zapełniona do maksymalnej pojemności, czy jest pusta.
 
   \item[\texttt{getDirection()}]
-    Zwraca przewidywany kierunek ruchu (\texttt{UP}/\texttt{DOWN}/\texttt{IDLE}) na podstawie pierwszego wpisu w kolejce.
+    Zwraca aktualny kierunek ruchu na podstawie stanu \texttt{Elevator.State} (\texttt{UP}/\texttt{DOWN}/\texttt{IDLE}).
 \end{description}
 
 
@@ -342,27 +349,47 @@ ma ujemną (czyli priorytetową) wartość priorytetu.
 \subsection{Klasa \texttt{Division}}
 \label{subsec:division}
 
+\subsubsection{Opis klasy}
 
-Reprezentuje pion budynku - zbiór pięter obsługiwanych przez jedną windę. Łączy obiekty \texttt{Floor} z obiektem \texttt{Elevator} i udostępnia wysokopoziomowe API do wywoływania windy.
+Klasa reprezentująca pion budynku. Jako pion rozumie się zbiór (listę) pięter obsługiwanych przez jedną windę. 
+Łączy w sobie obiekty \texttt{Floor} z obiektem \texttt{Elevator}, zawierając jednocześnie obiekty klasy \texttt{Entity}
+i udostępnia wysokopoziomowe API do wywoływania windy.
 
-\textbf{Najważniejsze metody:}
+Klasa ta zawiera następujące informacje:
+\begin{enumerate}
+    \item \texttt{floors} - Lista pięter należących do kondygnacji budynku. Na jej podstawie wyznaczane są dostępne
+        dla windy piętra, w tym najwyższe i najniższe dostępne; 
+
+    \item \texttt{elevator} - Obiekt klasy \texttt{Elevator}, reprezentujący faktyczną windę działającą windę;
+    \item \texttt{name} - nazwa kondygnacji (atrybut przestarzały, pozostawiony po testach w terminalu);  
+\end{enumerate}
+
+\subsubsection{Najważniejsze metody:}
 
 \begin{description}[leftmargin=1cm, style=nextline]
   \item[\texttt{Division(String name, int startFloor, int endFloor, Elevator elevator)}]
-    Konstruktor tworzy listę pięter od \texttt{startFloor} do \texttt{endFloor} (włącznie). Rzuca \texttt{IllegalArgumentException}, gdy \texttt{endFloor < startFloor}.
+    Konstruktor, w którym tworzona jest lista pięter od \texttt{startFloor} do \texttt{endFloor} (włącznie). 
+    Wyrzuca \texttt{IllegalArgumentException}, gdy \texttt{endFloor < startFloor}. Do tego dodawana jest kopia obiektu 
+    klasy \texttt{Elevator}.
 
   \item[\texttt{callElevator(int originFloor, int destinationFloor)}]
   \label{division:callElevator}
-    Główna metoda API: tworzy pasażera na piętrze \texttt{originFloor} (przez \texttt{Floor.spawnEntity}) i dodaje to piętro do kolejki windy (\texttt{Elevator.enqueueDestination}). Zwraca referencję do nowo utworzonego pasażera.
+    Główna metoda obsługi windy: tworzy pasażera na piętrze \texttt{originFloor} (wywołując \texttt{Floor.spawnEntity})
+    i dodaje \texttt{originFloor} do kolejki windy z priorytetem \textbf{1} (wywołując \texttt{Elevator.enqueueDestination}). 
+    Zwraca referencję do nowo utworzonego pasażera.
 
   \item[\texttt{getFloor(int floorNumber)}]
-    Zwraca obiekt \texttt{Floor} dla podanego numeru piętra. Rzuca \texttt{IndexOutOfBoundsException} przy numerze spoza zakresu.
+    Metoda zwracająca obiekt \texttt{Floor} dla podanego numeru piętra. Wyrzuca \texttt{IndexOutOfBoundsException}
+    przy numerze spoza zakresu.
 
   \item[\texttt{getMinFloor()}, \texttt{getMaxFloor()}]
-    Wyznaczają odpowiednio najniższe i najwyższe piętro w pionie, korzystając z naturalnego porządku obiektów \texttt{Floor}.
+    Wyznaczają i zwracają odpowiednio najniższe i najwyższe piętro w pionie,
+    korzystając z funkcjonalności \texttt{Collections.min} i \texttt{Collections.max}.
 
   \item[\texttt{printStatus()}]
-    Wypisuje na standardowe wyjście aktualny stan wszystkich pięter oraz windy - pomocnicze narzędzie diagnostyczne.
+    \textit{Przestarzała metoda}
+    Wypisuje na standardowe wyjście aktualny stan wszystkich pięter oraz windy - przestarzałe narzędzie diagnostyczne
+    przed stworzeniem graficznego interfejsu użytkownika.
 \end{description}
 
 
@@ -373,37 +400,65 @@ Reprezentuje pion budynku - zbiór pięter obsługiwanych przez jedną windę. �
 \subsection{Klasa \texttt{ElevatorGUI}}
 \label{subsec:gui}
 
-\textbf{Pakiet:} \texttt{GUI}
 
-Główne okno aplikacji zbudowane na bazie \texttt{JFrame} (Swing). Odpowiada za wizualizację stanu symulacji w czasie rzeczywistym oraz interakcję z użytkownikiem. Komunikacja z warstwą modelu odbywa się przez interfejs \texttt{ElevatorListener} - winda wywołuje \texttt{updateUIState()} po każdym ruchu i postoju.
+Główne okno interfejsu graficznego aplikacji zbudowane wykorzystując pakiet Swing. 
+W celu utworzenia przejrzystego interfejsu użytkownika, wykorzystano obiekty klasy \texttt{JFrame}, które  
+odpowiadają za wizualizację odpowiednich parametrów, zarówno wejściowych jak i wyjściowych aktualnego stanu symulacji 
+w czasie rzeczywistym oraz pozwalają na interakcję z użytkownikiem. 
 
-\textbf{Układ interfejsu:}
+Komunikacja z warstwą modelu odbywa się przez interfejs \texttt{ElevatorListener} - obiekt klasy \texttt{Elevator} wywołuje 
+\texttt{updateUIState()} po każdym ruchu i postoju.
+
+\subsubsection{Wykorzystane układy interfejsu BorderLayout}
+W głównej framudze \texttt{JFrame} ustawiono elementy w sposób opisany poniżej: 
 \begin{itemize}
-  \item \textbf{Północ} (\texttt{BorderLayout.NORTH}) - panel parametrów symulacji (zakresy pięter, prędkość, czas postoju, pojemność) z przyciskiem \emph{Zastosuj i restartuj},
-  \item \textbf{Centrum} - dwie kolumny: lista pięter (z zaznaczeniem aktualnej pozycji windy) i panel stanu windy (piętro, prędkość, kierunek, pasażerowie, kolejka),
-  \item \textbf{Południe} - panel dodawania pasażera ręcznego oraz przyciski sterowania symulacją.
+  \item \texttt{BorderLayout.NORTH} - panel parametrów symulacji. W to wchodzą kontrolki dot. zakresu pięter, prędkości, czas postoju oraz pojemności.
+  W celu zaakceptowania zmian należy wcisnąć przycisk \emph{Zastosuj i restartuj}. \textbf{Uwaga} - po wciśnięciu przycisku kolejka symulacji zostanie zresetowana 
+  do domyślnego przykładu, usuwając istniejące obiekty \texttt{Entity}. (patrz \texttt{initSimulationFromInputs} w sekcji \ref{gui:metody})
+  \item \texttt{BorderLayout.CENTER} - panel środkowy zawiera dwie wewnętrzne kolumny:
+  \begin{enumerate}
+    \item listę pięter w kondygnacji \texttt{Division} z aktualna pozycją windy, będącą panelem przedstawiającym rzeczywistą pracę symulacji systemu operacyjnego;
+    \item listę informacji dot. aktualnego stanu windy i symulacji, w tym: stan symulacji, aktualne piętro na którym jest winda, prędkość przejścia windy między piętrami, 
+          stan windy (według \ref{subsubsec:elevator_stany}), liczba pasażerów w windzie oraz aktualna kolejka z priorytetami;
+  \end{enumerate} panel stanu windy (piętro, prędkość, kierunek, pasażerowie, kolejka),
+  \item \texttt{BorderLayout.SOUTH} - panel dolny składa się z dwóch sekcji, mianowicie:
+  \begin{enumerate}
+    \item sekcja ręcznego dodawania pasażerów, z doborem pięter;
+    \item sekcja kontroli symulacji oraz dodania losowego pasażera.
+  \end{enumerate} 
 \end{itemize}
 
-\textbf{Najważniejsze metody:}
+\begin{figure}[H]
+  \includesvg[width=\textwidth]{phts/svg/main_screen.svg}
+  \caption{Interfejs graficzny użytkownika, wedle opisu podanego powyżej. W tym przykładzie, winda znajduje się w domyślnej startowej pozycji (piętro 4). Konfiguracja 
+  również jest domyślna.}
+\end{figure}
+
+\subsubsection{Najważniejsze metody:}
+\label{gui:metody}
 
 \begin{description}[leftmargin=1cm, style=nextline]
   \item[\texttt{initSimulationFromInputs()}]
-    Odczytuje wartości ze spinnerów, tworzy nowy obiekt \texttt{Elevator} i \texttt{Division}, rejestruje listener GUI oraz dodaje domyślnych pasażerów startowych.
+    Metoda inicjalizująca symulację na podstawie podanych parametrów, jednocześnie resetująca kolejkę \texttt{destinationQueue} do jej wstępnego stanu. 
+    W praktyce, odczytuje wartości z panelu parametrów, tworzy nowy obiekt \texttt{Elevator} i \texttt{Division}, rejestruje listener GUI oraz dodaje 
+    domyślnych pasażerów startowych;
 
   \item[\texttt{startSimulationThread()}]
-    Uruchamia wątek symulacji (jeśli nie jest aktywny), który wywołuje \texttt{Elevator.handleFloorStop} oraz \texttt{Elevator.processQueue}.
+    Metoda uruchamiająca wątek symulacji, jeśli nie jest aktywny. Wątek ten wywołuje \texttt{Elevator.processQueue}, czyli kontunuuje główną pętle programu;
 
   \item[\texttt{stopSimulation()}]
-    Ustawia flagę \texttt{stopRequested} i przerywa wątek symulacji przez \texttt{Thread.interrupt()}.
+    Ustawia flagę \texttt{stopRequested} i przerywa wątek symulacji wykorzystując do tego \texttt{Thread.interrupt()};
 
   \item[\texttt{spawnRandomPassenger()}]
-    Losuje parę pięter (różnych) w ramach aktualnego zakresu \texttt{Division} i wywołuje \texttt{callElevator}. Jeśli winda stoi i symulacja jest aktywna, automatycznie wznawia wątek.
+    Metoda automatycznego generowania i wstawiania osobnika do kondygnacji. Losuje parę różnych pięter w ramach aktualnej listy pięter w obiekcie klasy \texttt{Division} 
+    i wywołuje \texttt{callElevator} dla nowego \texttt{Entity} z danymi piętrami. Jeśli winda stoi i symulacja jest aktywna, automatycznie wznawia wątek;
 
   \item[\texttt{addManualPassenger()}]
-    Pobiera wartości ze spinnerów \emph{Z piętra} i \emph{Na piętro} i wywołuje \texttt{callElevator}. Waliduje, że piętra są różne.
+    Metoda pobrania wartości ze spinnerów \emph{Z piętra} i \emph{Na piętro} i wywołuje \texttt{callElevator}. Waliduje, czy piętra są różne;
 
   \item[\texttt{updateUIState()}]
-    Aktualizuje wszystkie etykiety i listę pięter za pomocą \texttt{SwingUtilities.invokeLater}, zapewniając wywołanie na wątku EDT.
+    Metoda aktualizuji wszystkich etykiet i elementów zmiennych w graficznym interfejsie użytkownika. Aktualizuje listę pięter za pomocą \texttt{SwingUtilities.invokeLater}, 
+    zapewniając wywołanie na wątku EDT.
 \end{description}
 
 \section{Uruchomienie projektu}
@@ -414,30 +469,45 @@ Główne okno aplikacji zbudowane na bazie \texttt{JFrame} (Swing). Odpowiada za
 \begin{itemize}
   \item \textbf{Java Development Kit (JDK)} w wersji 17 lub nowszej.
   \item System operacyjny z obsługą Java Swing (Windows, Linux z X11/Wayland, macOS).
-  \item Opcjonalnie: \textbf{Maven} lub \textbf{Gradle} do zarządzania budowaniem projektu (projekt nie posiada pliku \texttt{pom.xml} ani \texttt{build.gradle} - poniżej podano ręczną kompilację).
 \end{itemize}
+
+\subsection{Główne repozytorium kodu}
+
+Cały projekt dostępny jest publicznie w repozytorium \url{https://github.com/crppl/rtos_projekt}. 
+W celu wykonania projektu należy sklonować repozytorium za pomocą komendy:
+\begin{lstlisting}[language=bash, caption={Sklonowanie repozytorium}]
+git clone https://github.com/crppl/rtos_projekt
+\end{lstlisting}
 
 \subsection{Kompilacja i uruchomienie z wiersza poleceń}
 
-Zakładając strukturę katalogów zgodną z archiwum \texttt{src.zip}:
+Po prawidłowym skopiowaniu repozytorium, w celu uruchomienia projektu z wiersza poleceń należy wejść do głównego katalogu repozytorium oraz wykonać następujące komendy:
 
-\begin{lstlisting}[language=bash, caption={Kompilacja projektu}]
+\begin{lstlisting}[language=bash, caption={Kompilacja i uruchomienie projektu.}]
 cd src/main/java
 javac -d out elevator/model/*.java GUI/ElevatorGUI.java
 java -cp out GUI.ElevatorGUI
 \end{lstlisting}
 
+To sprawi, że w katalogu \texttt{src/main/java/out} pojawią się skompilowane klasy projektu. Ostatnia komenda włącza projekt.
+
 \subsection{Uruchomienie z IDE}
 
+Aby uruchomić program w wybranym IDE, należy wykonać następujące kroki:
+
 \begin{enumerate}
-  \item Otwórz projekt w wybranym środowisku (IntelliJ IDEA, Eclipse, NetBeans).
+  \item Otwórz projekt w wybranym środowisku (VS Code, IntelliJ IDEA, Eclipse, NetBeans).
   \item Ustaw katalog \texttt{src/main/java} jako \emph{source root}.
   \item Uruchom metodę \texttt{main} w klasie \texttt{GUI.ElevatorGUI}.
 \end{enumerate}
 
+
 \subsection{Konfiguracja parametrów w GUI}
 
-Po uruchomieniu aplikacji dostępny jest panel \emph{Parametry symulacji} pozwalający na zmianę:
+Po uruchomieniu aplikacji powinien wyświetlić się graficzny interfejs użytkownika \href{subsec:gui}{sekcji 3.5}. Jak opisano, w górnej części ekranu znajduje 
+się panel kontrolny - \emph{Parametry symulacji} pozwalający na zmianę podstawowych parametrów windy.
+
+Domyślne parametry po włączeniu programu prezentują się następująco:
 
 \begin{center}
 \begin{tabular}{lll}
@@ -455,6 +525,8 @@ Po uruchomieniu aplikacji dostępny jest panel \emph{Parametry symulacji} pozwal
 \end{center}
 
 Kliknięcie przycisku \emph{Zastosuj i restartuj} zatrzymuje bieżącą symulację, reinicjalizuje model z nowymi parametrami i dodaje domyślnych pasażerów startowych.
+
+\newpage
 
 \section{Architektura i przepływ danych}
 \label{sec:architektura}
@@ -476,16 +548,105 @@ Przepływ typowego zdarzenia \emph{wywołanie windy}:
   \item Po każdym ruchu i postoju \texttt{Elevator} wywołuje \texttt{notifyListeners()}, co uruchamia \texttt{ElevatorGUI.updateUIState()} na wątku EDT.
 \end{enumerate}
 
+\section{Napotkane problemy i błędy}
+
+W niniejszej sekcji opisane zostaną problemy i błędy napotkane podczas tworzenia aplikacji symulacyjnej, w kolejności dowolnej.
+
+\subsection{Wstępna obsługa kolejki priorytetowej}
+
+Wstępnym założeniem projektowym było utworzenie kolejki priorytetowej, która:
+\begin{itemize}
+  \item Ma co najwyżej jedną kopię danego piętra w kolejce;
+  \item Wstawia wpierw piętra wezwane przez pazażerów "wewnątrz windy", potem dojeżdża do pięter które zostały wezwane "z piętra". 
+\end{itemize}
+
+Utworzyło to zasadniczy problem - winda jechała wielokrotnie w górę i w dół bez zatrzymania się na odpowiednich piętrach - obsługiwała jednego pasażera na raz.
+
+W takim przypadku istnieje sytuacja, że winda przejedzie wiele iteracji bez zatrzymania się na piętrze gdzie jest osoba oczekujący od dłuższego czasu. 
+
+Problem ten jest prostym problemem odpowiedniego ustawienia priorytetów. We wstępnej implementacji wykorzystano najprostszą kolejkę \texttt{LinkedList<Integer>}, jednak to nie 
+utrzymuje wzmianki o priorytecie pięter. 
+
+W celu rozwiązania problemu zmieniono strukturę kolejki \texttt{destinationQueue} na \texttt{LinkedList<ArrayList<Integer>>} - to pozwoliło na rozszerzenie wymiaru danych
+o dodatkowy, w który został wstawiony priorytet kolejki. Wstępnie, priorytet ten miał wartości wyłącznie -1 oraz +1 (gdzie -1 to większy priorytet), ale z uwagi na dodatkowy
+problem opisany poniżej wymiar ten został rozszerzony. 
+
+Ostateczne wartości priorytetu zostały opisane w sekcji \ref{subsubsec:elevator_kolejka}
+
+\subsection{Omijanie pięter, na których winda mogła się zatrzymać}
+
+Problem ten wystąpił po wprowadzeniu priorytetu do kolejki. Objawiał się w sytuacjach analogicznych do podanego poniżej przykładu:
+
+\begin{enumerate}
+  \item Winda zaczyna podróż w dół z 6 piętra do 1 piętram z jednym pasażerem;
+  \item Na 4 piętrze oczekuje jedna osoba, która jedzie na 2 piętro.
+\end{enumerate} 
+
+W takiej sytuacji, winda ignorowała osobę na 4 piętrze, i z 6 piętra jechała wprost na 1 piętro aby dokończyć wstępną trasę. Dopiero wtedy, jeżeli żadna osoba nie wsiadła na 1 
+piętrze, winda jechała do następnej oczekującej w pionie osoby. Analogiczna sytuacja odbywała się, gdy w windzie były 2 lub więcej osoby jadące na różne piętra. 
+
+Naprawa błędu wymagała zaktualizowania metody \texttt{handleFloorStop} w klasie \texttt{Elevator}, oraz wywoływania owej metody w \texttt{processQueue}.
+
+W przypadku wywołania metody, w \texttt{processQueue} nie zwracano uwage na to, czy aktualne piętro jest \emph{gdziekolwiek} w kolejce, tylko czy jest \emph{na początku}.
+Poprawiono ten błąd tak, aby winda była zatrzymywała się na pietrze które jest w kolejce priorytetowej, niezależnie od jej kolejności. Aby program działał należało również 
+zaktualizować implementację \texttt{handleFloorStop} - rozszerzono o dodatkowe sprawdzanie, czy pasażerowie są na piętrze i odpowiednią obsługę takiego zdarzenia.
+
+Dzięki temu, zmniejszono błędne, wielokrotne przejazdy windy i zbliżono się do możliwej maksymalizacji efektywności przejazdów.
+
+\subsection{Długi czas oczekiwania w specyficznych przypadkach}
+
+Mimo wcześniej opisanych rozwiązań, pojawił się ostatni napotkany problem z kolejka priorytetową. Miał on do czynienia z faktem, iż wchodząc do windy osoba wstawiała 
+swoje piętro na początek kolejki. Biorąc pod uwagę binarne ograniczenie priorytetu (od -1 do +1) nie dało się zdeterminować tego, która wartość powinna być na poczatku czy na 
+końcu wyższego priorytetu.
+
+Wówczas, przy wchodzeniu osobnika do windy, priorytet jego piętra został dodany na początek, a cała reszta zignorowana - nawet jeśli oryginalnie winda jechała na niższe piętro.
+Biorąc przykład z poprzedniego podrozdziału:
+
+\begin{enumerate}
+  \item Winda zaczyna podróż w dół z 6 piętra do 1 piętram z jednym pasażerem;
+  \item Na 4 piętrze oczekuje jedna osoba, która jedzie na 7 piętro.
+\end{enumerate} 
+
+w tej sytuacji, winda zatrzymałaby się na piętrze 4 \emph{i pojechała na 7 pięro zamiast zjechania na 1 piętro, gdzie było wcześniej wezwane}.
+
+Tworzyło to kolejny wektor problemu omijania pięter, do którego nie znaleziono rozwiązania z binarnym podziałem priorytetu - więc, aby rozwiązać problem, wprowadzono priorytet
+\emph{-2} - jest to unikalna wartość priorytetu, która zostaje na głowie kolejki. Daje to możliwość wyznaczenia piętra na które winda \emph{musi} dojechać zanim zmieni
+kierunek jazdy - rozwiązując wyżej wymieniony problem.
+
+Gdy kolejka dojeżdża do piętra o priorytecie -2, w następnym kroku wyznaczana jest nowe piętro o priorytecie -2 jako głowa kolejki po usunięciu starego piętra.
+
+\section{Dalsze możliwości rozwoju}
+
+Poniżej przedstawione są proponowane dalsze aspekty rozwoju aplikacji, na które autorzy uważają że należy spojrzeć w pierwszej kolejności:
+
+\begin{enumerate}
+  \item \textbf{Tryb automatycznego generowania osobników} - Aktualnie jedyny sposób na dodanie osobników w celu kontynuowania działania windy to ręczne wciśnięcie 
+          jednego z dwóch przycisków - dodania z parametrami ustawionymi oraz dodawania z parametrami losowymi. W celu rozszerzenia programu sugeruje się dodanie 
+          trybu automatycznego generowania osobników na piętrach, które wykorzysta funkcjonalną pętle i sprawdzanie liczby istniejących pasażerów do 
+          częściowo-realistycznego symulowania codziennego natłoku wykorzystania systemu;
+  \item \textbf{Rozwinięcie wizualizacji jazdy windy} - Z uwagi na możliwość dynamicznego ustawienia pięter w kondygnacji, podczas tworzenia graficznego interfejsu użytkownika
+        skupiono się na efektywnej reprezentacji zmiennej liczby pięter. W celu rozszerzenia programu sugeruje się wprowadzenie dynamicznego pola graficznego, pokazującego 
+        windę jako zdjęcie / ikonę poruszającą się na wyznaczonym polu ekranu, rozwinięcie przedstawienia osób oczekujących na piętrze o ikony osób; 
+  \item \textbf{Wprowadzenie obsługi wielu wind} - Aplikacja zakłada, że jedna kondygnacja klasy \texttt{Division} posiada tylko jedną windę, która obsługuje wszystkich 
+        pasażerów - analogicznie do większości klatek bloków mieszkaniowych w Polsce. W celu rozszerzenia programu sugeruje się wprowadzenie obsługi wielu wind, w co wchodzi 
+        wspólna kolejka przywołań wind operowana przez wiele obiektów klasy \texttt{Elevator}. Wymagałoby to m.in. odpowiedniego oznaczenia pięter, do któego jedzie konkretna
+        winda, aby uniknąć powtarzania niepotrzebnych zatrzymań. 
+\end{enumerate}
+
+\newpage
+
 \section{Podsumowanie}
 \label{sec:podsumowanie}
 
-% TODO: Uzupełnić podsumowanie projektu.
-% Sugerowane punkty do opisania:
-%   - Wnioski z realizacji projektu
-%   - Napotkane trudności i sposób ich rozwiązania
-%   - Możliwe kierunki dalszego rozwoju (np. obsługa wielu wind, algorytmy SCAN/LOOK)
-%   - Ocena zastosowanych rozwiązań technicznych
+Aplikacja \emph{Elevator} stworzona w ramach zaliczenia przedmiotu Systemy Operacyjne Czasu Rzeczywistego w odpowiedni sposób symuluje działanie systemu windy obsługującej 
+klatkę / pion pięter w budynku. Dzięki odpowiedniej implementacji oraz z rozszerzeniami obsługującymi faktyczny system automatyczny, aplikacja \emph{Elevator} jest 
+w stanie odpowiednio obsłużyć działanie windy przewozowej, zarówno pasażerskiej jak i towarowej.
 
-\textit{[Miejsce na podsumowanie - do uzupełnienia przez autora.]}
+W ramach wykonania projektu autorzy byli w stanie bliżej przyjrzeć się procesowi tworzenia systemów operacyjnych czasu rzeczywistego i częstymi problemami z tym procesem 
+związanymi. Było to zarówno istotne w procesie uczenia, jak i ciekawe doświadczenie, które odkryło kolejny aspekt świata cyfryzacji i automatyzacji.
+
+Najważniejszy aspekt całego projektu, tj. stworzenie odpowiedniej kolejki priorytetowej, został wykonany pomyślnie mimo opisanych wcześniej, tymczasowych mankamentów.
+Dokładając do tego odpowiednie klasy reprezentujące aspekty kwintesencji tematu stworzono system, którego implementację, mimo pozostawionych możliwości dalszego rozwinięcia, 
+można uznać za sukces zespołu, który nad nim pracował.
 
 \end{document}

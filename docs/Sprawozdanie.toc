@@ -15,11 +15,21 @@
 \contentsline {subsubsection}{\numberline {3.3.3}Kolejka \texttt {destinationQueue}}{6}{subsubsection.3.3.3}%
 \contentsline {subsubsection}{\numberline {3.3.4}Najważniejsze metody:}{6}{subsubsection.3.3.4}%
 \contentsline {subsection}{\numberline {3.4}Klasa \texttt {Division}}{7}{subsection.3.4}%
+\contentsline {subsubsection}{\numberline {3.4.1}Opis klasy}{7}{subsubsection.3.4.1}%
+\contentsline {subsubsection}{\numberline {3.4.2}Najważniejsze metody:}{8}{subsubsection.3.4.2}%
 \contentsline {subsection}{\numberline {3.5}Klasa \texttt {ElevatorGUI}}{8}{subsection.3.5}%
-\contentsline {section}{\numberline {4}Uruchomienie projektu}{9}{section.4}%
-\contentsline {subsection}{\numberline {4.1}Wymagania}{9}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Kompilacja i uruchomienie z wiersza poleceń}{9}{subsection.4.2}%
-\contentsline {subsection}{\numberline {4.3}Uruchomienie z IDE}{9}{subsection.4.3}%
-\contentsline {subsection}{\numberline {4.4}Konfiguracja parametrów w GUI}{9}{subsection.4.4}%
-\contentsline {section}{\numberline {5}Architektura i przepływ danych}{9}{section.5}%
-\contentsline {section}{\numberline {6}Podsumowanie}{10}{section.6}%
+\contentsline {subsubsection}{\numberline {3.5.1}Wykorzystane układy interfejsu BorderLayout}{8}{subsubsection.3.5.1}%
+\contentsline {subsubsection}{\numberline {3.5.2}Najważniejsze metody:}{9}{subsubsection.3.5.2}%
+\contentsline {section}{\numberline {4}Uruchomienie projektu}{10}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Wymagania}{10}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Główne repozytorium kodu}{10}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Kompilacja i uruchomienie z wiersza poleceń}{10}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Uruchomienie z IDE}{11}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Konfiguracja parametrów w GUI}{11}{subsection.4.5}%
+\contentsline {section}{\numberline {5}Architektura i przepływ danych}{12}{section.5}%
+\contentsline {section}{\numberline {6}Napotkane problemy i błędy}{12}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Wstępna obsługa kolejki priorytetowej}{12}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Omijanie pięter, na których winda mogła się zatrzymać}{13}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Długi czas oczekiwania w specyficznych przypadkach}{13}{subsection.6.3}%
+\contentsline {section}{\numberline {7}Dalsze możliwości rozwoju}{14}{section.7}%
+\contentsline {section}{\numberline {8}Podsumowanie}{15}{section.8}%

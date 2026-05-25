@@ -51,7 +51,7 @@ public class ElevatorGUI extends JFrame {
         JPanel main = new JPanel(new GridLayout(1, 2, 10, 10));
 
         JPanel floorsPanel = new JPanel(new BorderLayout());
-        floorsPanel.setBorder(new TitledBorder("Piętra"));
+        floorsPanel.setBorder(new TitledBorder("Pietra"));
         floorsList.setVisibleRowCount(10);
         floorsPanel.add(new JScrollPane(floorsList), BorderLayout.CENTER);
         floorsPanel.add(totalFloorPassengersLabel, BorderLayout.SOUTH);
@@ -71,17 +71,17 @@ public class ElevatorGUI extends JFrame {
         JPanel controls = new JPanel(new GridLayout(4, 4, 5, 5));
         controls.setBorder(new TitledBorder("Parametry symulacji"));
 
-        controls.add(new JLabel("Najniższe piętro:"));
+        controls.add(new JLabel("Najnizsze pietro:"));
         controls.add(minFloorInput);
-        controls.add(new JLabel("Najwyższe piętro:"));
+        controls.add(new JLabel("Najwyzsze pietro:"));
         controls.add(maxFloorInput);
         
-        controls.add(new JLabel("Piętro startowe:"));
+        controls.add(new JLabel("Pietro startowe:"));
         controls.add(startFloorInput);
-        controls.add(new JLabel("Pojemność windy:"));
+        controls.add(new JLabel("Pojemnosc windy:"));
         controls.add(capacityInput);
         
-        controls.add(new JLabel("Czas przejazdu między piętrami (ms):"));
+        controls.add(new JLabel("Czas przejazdu miedzy pietrami (ms):"));
         controls.add(speedMsInput);
         controls.add(new JLabel("Czas postoju przy wsiadaniu (ms):"));
         controls.add(ioWaitMsInput);
@@ -94,11 +94,11 @@ public class ElevatorGUI extends JFrame {
         controls.add(apply);
 
         JPanel passengerPanel = new JPanel(new GridLayout(3, 2, 5, 5));
-        passengerPanel.setBorder(new TitledBorder("Dodaj pasażera"));
-        passengerPanel.add(new JLabel("Z piętra:"));
+        passengerPanel.setBorder(new TitledBorder("Dodaj pasazera"));
+        passengerPanel.add(new JLabel("Z pietra:"));
         passengerPanel.add(fromFloorInput);
 
-        passengerPanel.add(new JLabel("Na piętro:"));
+        passengerPanel.add(new JLabel("Na pietro:"));
         passengerPanel.add(toFloorInput);
         JButton addManualPassenger = new JButton("Dodaj");
         passengerPanel.add(new JLabel(""));
@@ -106,7 +106,7 @@ public class ElevatorGUI extends JFrame {
 
         JPanel buttons = new JPanel(new GridLayout(1,3,5,5));
 
-        JButton addRandomPassenger = new JButton("<html><body style='text-align:center'>Dodaj losowego<br>pasażera</body></html>");
+        JButton addRandomPassenger = new JButton("<html><body style='text-align:center'>Dodaj losowego<br>pasazera</body></html>");
         JButton runSimulation = new JButton("Start symulacji");
         JButton stopSimulation = new JButton("Stop symulacji");
 
@@ -139,6 +139,7 @@ public class ElevatorGUI extends JFrame {
     }
 
     private void initSimulationFromInputs() {
+        System.out.println("rel");
         int start = (int) startFloorInput.getValue();
         int min = (int) minFloorInput.getValue();
         int max = (int) maxFloorInput.getValue();
@@ -147,7 +148,7 @@ public class ElevatorGUI extends JFrame {
         int cap = (int) capacityInput.getValue();
 
         if (max < min) {
-            JOptionPane.showMessageDialog(this, "Max piętro musi być >= min piętro.");
+            JOptionPane.showMessageDialog(this, "Max pietro musi byc >= min pietro.");
             return;
         }
 
@@ -180,7 +181,7 @@ public class ElevatorGUI extends JFrame {
         Random r = new Random();
         int from, to;
         do {
-            from = r.nextInt(division.getFloorCount()) + division.getMinFloor(); // bo możemy mieć piętra ujemne albo zaczynać na >0 piętrze
+            from = r.nextInt(division.getFloorCount()) + division.getMinFloor(); // bo mozemy miec pietra ujemne albo zaczynac na >0 pietrze
             to = r.nextInt(division.getFloorCount()) + division.getMinFloor();
         } while (from == to);
 
@@ -195,7 +196,7 @@ public class ElevatorGUI extends JFrame {
         int to = (int) toFloorInput.getValue();
 
         if (from == to) {
-            JOptionPane.showMessageDialog(this, "Piętro początkowe i docelowe muszą być różne.");
+            JOptionPane.showMessageDialog(this, "Pietro poczatkowe i docelowe musza byc rozne.");
             return;
         }
 
@@ -236,8 +237,8 @@ public class ElevatorGUI extends JFrame {
                 simulationState.setText("Stan symulacji: Aktywna");
                 simulationState.setForeground(new Color(28,163,31));
             }
-            elevatorFloorLabel.setText("Aktualne piętro: " + elevator.getCurrentFloor());
-            elevatorSpeedLabel.setText("Prędkość (ms/piętro): " + elevator.getSpeedMs());
+            elevatorFloorLabel.setText("Aktualne pietro: " + elevator.getCurrentFloor());
+            elevatorSpeedLabel.setText("Predkosc (ms/pietro): " + elevator.getSpeedMs());
             elevatorStateLabel.setText("Stan: " + elevator.getDirection());
             switch(elevator.getDirection()) {
                 case UP:
@@ -251,7 +252,7 @@ public class ElevatorGUI extends JFrame {
                     break;
             }
             
-            elevatorPassengersLabel.setText("Pasażerowie w windzie: " +
+            elevatorPassengersLabel.setText("Pasazerowie w windzie: " +
                     elevator.getOccupantCount() + "/" + elevator.getMaxCapacity());
             elevatorQueueLabel.setText("Kolejka: " + elevator.getDestinationQueue());
 
@@ -261,12 +262,12 @@ public class ElevatorGUI extends JFrame {
             for (int i = floors.size() - 1; i >= 0; i--) {
                 Floor f = floors.get(i);
                 String marker = (elevator.getCurrentFloor() == f.getFloorNumber()) ? " ◄ Winda" : "";
-                floorsModel.addElement("Piętro " + f.getFloorNumber() +
-                        " | Pasażerowie na piętrze: " + f.getWaitingCount() + marker);
+                floorsModel.addElement("Pietro " + f.getFloorNumber() +
+                        " | Pasazerowie na pietrze: " + f.getWaitingCount() + marker);
                 totalWaiting += f.getWaitingCount();
             }
 
-            totalFloorPassengersLabel.setText("Łącznie na piętrach: " + totalWaiting);
+            totalFloorPassengersLabel.setText("Sumarycznie na pietrach: " + totalWaiting);
         });
     }
 

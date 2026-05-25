@@ -88,7 +88,7 @@ public class Elevator {
         
         if (checkSize == destinationQueue.size()) 
             destinationQueue.addLast(new ArrayList<>(Arrays.asList(floor, -1)));
-        System.out.printf("  Winda dodała piętro %d na początek kolejki. Kolejka: %s%n", floor, destinationQueue);
+        System.out.printf("  Winda dodała piętro %d na poczatek kolejki. Kolejka: %s%n", floor, destinationQueue);
     }
 
     public void enqueueDestination(int floor) {

@@ -77,7 +77,7 @@ public class Division {
         for (int i = floors.size() - 1; i >= 0; i--) {
             Floor f = floors.get(i);
             String marker = (elevator.getCurrentFloor() == f.getFloorNumber()) ? " ◄ ELEVATOR" : "";
-            System.out.printf("  Piętro %d | L. osób czekających: %d%s%n", f.getFloorNumber(), f.getWaitingCount(), marker);
+            System.out.printf("  Piętro %d | L. osób czekajacych: %d%s%n", f.getFloorNumber(), f.getWaitingCount(), marker);
         }
         elevator.printStatus();
         System.out.println("=====================================================");
